@@ -12,7 +12,7 @@ type Status = typeof Statuses[keyof typeof Statuses];
 
 type Folder = string;
 
-const Statuses = { 
+const Statuses = {
   COMPLETED: "completed",
   IN_PROGRESS: "in progress",
   STOPPED: "stopped",
@@ -49,7 +49,7 @@ type FileResult = {
 
 type DownloadType = "full" | "cover" | "slice"
 
-type ThumbnailResult = {status: "date" | "cover" | "default", thumbnail: string}
+type ThumbnailResult = { status: "date" | "cover" | "default", thumbnail: string }
 
 function findOrCreateDownload(code: Code, date: Date): DownloadEntry {
   date = dateh.formatDate(date, "-");
@@ -78,22 +78,22 @@ function isFull(code: Code): Promise<boolean> {
 
 function searchDownloadedPages(folder: Folder): Promise<Page[]> {
   return fsh.getFiles(folder).then(files => {
-    let pages:Page[] = files.filter(file => (file.endsWith(".png") || file.endsWith(".jpg")) && !(file.endsWith("thumbnail.png")));
+    let pages: Page[] = files.filter(file => (file.endsWith(".png") || file.endsWith(".jpg")) && !(file.endsWith("thumbnail.png")));
     return Promise.resolve([...pages]);
   });
 }
 
 function getStatus(codes: CodeAndDate[]): Promise<CodeDateStatus[]> {
   return Promise.all(codes.map(r => unaryStatus(r.code, r.date))).then(res => {
-    let result: CodeDateStatus[]= [];
+    let result: CodeDateStatus[] = [];
     codes.forEach((v, i) => {
-      result[i] = {code: codes[i].code, date: codes[i].date, status: res[i].status};
+      result[i] = { code: codes[i].code, date: codes[i].date, status: res[i].status };
     });
     return Promise.resolve(result);
   });
 }
 
-function unaryStatus(code: Code, date: Date): Promise<{status: Status, current?: number, total?: number}>  {
+function unaryStatus(code: Code, date: Date): Promise<{ status: Status, current?: number, total?: number }> {
   date = dateh.formatDate(date, "-");
   let folder = `results/${code}/${date}`;
   let outputFile = `${folder}/${code}_${date}.cbz`;
@@ -101,7 +101,7 @@ function unaryStatus(code: Code, date: Date): Promise<{status: Status, current?:
   if (fsh.fileExists(outputFile)) {
     return Promise.resolve({ status: "completed" });
   }
- 
+
   let download = findDownload(code, date);
   if (download != null) {
     if (download.inProgress) {
@@ -154,7 +154,7 @@ function read(code: Code, date: Date): Promise<FileResult> {
     return new Promise((resolve, reject) => {
       fs.readFile(e, "binary", (err, data) => {
         if (err) reject(err);
-        else resolve({ type: e.endsWith(".cbz")? "cbz" : "pdf", data: data });
+        else resolve({ type: e.endsWith(".cbz") ? "cbz" : "pdf", data: data });
       });
     });
   });
@@ -173,7 +173,7 @@ let pagesQueue = promiseh.newQueue(() => Math.round(Math.random() * 2000) + 3000
 let imagesQueue = promiseh.newQueue(() => Math.round(Math.random() * 18000) + 15000);
 let fullQueue = promiseh.newQueue(() => Math.round(Math.random() * 2000) + 3000);
 
-function download(code: Code, date: Date, type: DownloadType): Promise<{status: Status}> {
+function download(code: Code, date: Date, type: DownloadType): Promise<{ status: Status }> {
   date = dateh.formatDate(date, "-");
   let folder = `results/${code}/${date}`;
   let outputFileName = `${code}_${date}.cbz`;
@@ -278,7 +278,7 @@ function getDownloads(code: Code | null): Promise<NamedDownloadEntry[]> {
   return accessorh.getBooks().then(books => {
     let result: NamedDownloadEntry[] = [];
     dwn.forEach(d => {
-      let entry: NamedDownloadEntry = {code: d.code, date: d.date, total: d.total, current: d.current, inProgress: d.inProgress, name: d.code}
+      let entry: NamedDownloadEntry = { code: d.code, date: d.date, total: d.total, current: d.current, inProgress: d.inProgress, name: d.code }
       result.push(entry);
       let book = books.find(b => b.code == d.code);
       if (book) {

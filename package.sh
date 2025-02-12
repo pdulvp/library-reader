@@ -12,4 +12,3 @@ fi
 
 mv -f output/build/* build
 rm -rf output/build
-

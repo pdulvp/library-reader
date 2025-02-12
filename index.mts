@@ -6,11 +6,60 @@ import { consoleh } from './utils/consoleh.mts';
 import { type ContentType, ContentTypes, from as ContentTypeFrom } from "./ContentTypes.mts";
 import { createProcessor, type RequestProcessor } from "./RequestProcessor.mts";
 
-import { type Accessor, type Page, type Code, type Date, type Book, combine } from "./Accessor.mts";
+import { combine } from "./Accessor.mts";
 
-let accessors = process.argv.slice(2);
+const ConfigFields = { hostname: "hostname", port: "port", accessors: "accessors" };
+
+type Configuration = {
+  hostname: string;
+  port: number,
+  accessors: string[]
+}
+
+const ConfigRules: { hostname: Rule<string>, port: Rule<number>, accessors: Rule<string[]> } = {
+  hostname: (type) => {
+    return { status: type != null && type.match(/^[0-9.]+$/) != null, msg: "code invalid format" }
+  },
+  port: (type) => {
+    return { status: type != null && Number(type) != null, msg: "date invalid format" }
+  },
+  accessors: (type) => {
+    return { status: type != null, msg: "type invalid format" }
+  }
+} as const;
+
+if (!fs.existsSync("configuration-default.json")) {
+  console.log("configuration-default is weirdly missing.");
+  process.exit();
+}
+
+let config = JSON.parse(fs.readFileSync("configuration-default.json", { encoding: "utf-8" }).toString()).configuration;
+let configuration: Configuration = {
+  hostname: urlh.param(config, ConfigFields.hostname, ConfigRules.hostname, (hostname) => hostname),
+  port: urlh.param(config, ConfigFields.port, ConfigRules.port, (port) => port),
+  accessors: urlh.param(config, ConfigFields.accessors, ConfigRules.accessors, (accessors) => accessors)
+};
+
+let params = process.argv.slice(2);
+if (params.length > 0) {
+  let name = params[0];
+  if (name.match("^[a-z\-]+$") && fs.existsSync(name + ".json")) {
+    console.log("load additional configuration: " + name);
+
+    let config = JSON.parse(fs.readFileSync(name + ".json", { encoding: "utf-8" }).toString()).configuration;
+    let userConfiguration: Configuration = {
+      hostname: urlh.param(config, ConfigFields.hostname, ConfigRules.hostname, (hostname) => hostname, true),
+      port: urlh.param(config, ConfigFields.port, ConfigRules.port, (port) => port, true),
+      accessors: urlh.param(config, ConfigFields.accessors, ConfigRules.accessors, (accessors) => accessors, true)
+    };
+
+    configuration = { ...configuration, ...Object.fromEntries(Object.entries(userConfiguration).filter(([_, value]) => value !== undefined)) }
+  }
+}
+
+let accessors = configuration.accessors;
 if (accessors.length == 0) {
-  console.log("An accessor to a press service is required");
+  console.log("An accessor is required");
   process.exit();
 }
 
@@ -20,7 +69,6 @@ if (unaccessibleAccessors.length > 0) {
   process.exit();
 }
 
-console.log(accessors);
 let accessorModules: any[] = [];
 for (let i = 0; i < accessors.length; i++) {
   const module: any = await import("./" + accessors[i]);
@@ -47,7 +95,9 @@ var api = {
 
 console.log(api);
 
-const rules: Rules = {
+const URLFields = { code: "code", date: "date", type: "type" };
+
+const Rules: { code: Rule<string>, date: Rule<string>, downloadType: Rule<string> } = {
   code: (type) => {
     return { status: type != null && type.match(/^[a-zA-Z0-9_-]+$/) != null, msg: "code invalid format" }
   },
@@ -57,8 +107,7 @@ const rules: Rules = {
   downloadType: (type) => {
     return { status: type == "cover" || type == "full" || type == "slice", msg: "type invalid format" }
   }
-};
-
+} as const;
 
 function proceedRequest(processor: RequestProcessor, onError: (e: Error) => void) {
 
@@ -96,7 +145,8 @@ function proceedRequest(processor: RequestProcessor, onError: (e: Error) => void
     }).catch((e) => { onError(e) });
 
   } else if (url.pathname == '/api/archives') {
-    let { code } = urlh.params(url, { code: rules.code });
+    let code = urlh.param(url, URLFields.code, Rules.code, (code) => "e");
+
     api.archives(code).then(e => {
       processor.json(e);
     }).catch((e) => { onError(e) });
@@ -109,7 +159,11 @@ function proceedRequest(processor: RequestProcessor, onError: (e: Error) => void
     }).catch((e) => { onError(e) });
 
   } else if (url.pathname == '/thumb') {
-    let { code, date } = urlh.params(url, { code: rules.code, date: rules.date });
+    let [code, date] = [
+      urlh.param(url, URLFields.code, Rules.code, (code) => code),
+      urlh.param(url, URLFields.date, Rules.date, (date) => date)
+    ];
+
     api.fetch.thumb(code, date).then(r => {
       processor.writeHead("Content-Disposition", `attachment;filename=${code}${date}.png`);
       processor.writeHead("X-Thumbnail-Status", r.status);
@@ -117,14 +171,21 @@ function proceedRequest(processor: RequestProcessor, onError: (e: Error) => void
     }).catch((e) => { onError(e) });
 
   } else if (url.pathname == '/read') {
-    let { code, date } = urlh.params(url, { code: rules.code, date: rules.date });
+    let [code, date] = [
+      urlh.param(url, URLFields.code, Rules.code, (code) => code),
+      urlh.param(url, URLFields.date, Rules.date, (date) => date)
+    ];
     api.fetch.read(code, date).then(r => {
       processor.writeHead("Content-Disposition", `attachment;filename=${code}${date}.${r.type}`);
       processor.end(r.data, r.type == "cbz" ? ContentTypes.CBZ : ContentTypes.PDF);
     }).catch((e) => { onError(e) });
 
   } else if (url.pathname == '/api/download') {
-    let { code, date, type } = urlh.params(url, { code: rules.code, date: rules.date, type: rules.downloadType });
+    let [code, date, type] = [
+      urlh.param(url, URLFields.code, Rules.code, (code) => code),
+      urlh.param(url, URLFields.date, Rules.date, (date) => date),
+      urlh.param(url, URLFields.type, Rules.downloadType, (type) => type)
+    ];
     api.fetch.download(code, date, "slice").then(r => { //type
       processor.json(r);
     }).catch((e) => { onError(e) });
@@ -135,7 +196,10 @@ function proceedRequest(processor: RequestProcessor, onError: (e: Error) => void
     }).catch((e) => { onError(e) });
 
   } else if (url.pathname == '/api/stop') {
-    let { code, date } = urlh.params(url, { code: rules.code, date: rules.date });
+    let [code, date] = [
+      urlh.param(url, URLFields.code, Rules.code, (code) => code),
+      urlh.param(url, URLFields.date, Rules.date, (date) => date)
+    ];
     api.fetch.stop(code, date).then(r => {
       processor.json(r);
     }).catch((e) => { onError(e) });
@@ -145,8 +209,8 @@ function proceedRequest(processor: RequestProcessor, onError: (e: Error) => void
   }
 }
 
-const hostname = "192.168.1.18";
-const port = 8099;
+const hostname = configuration.hostname;
+const port = configuration.port;
 const server = http.createServer();
 
 server.on("request", (request, res) => {

@@ -1,0 +1,8 @@
+{
+  "$schema": "./configuration.schema.json",
+  "configuration": {
+    "port": 8099,
+    "hostname": "127.0.0.1",
+    "accessors": []
+  }
+}

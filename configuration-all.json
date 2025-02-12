@@ -1,0 +1,9 @@
+{
+  "$schema": "./configuration.schema.json",
+  "configuration": {
+    "accessors": [
+      "accessorh/abandonwareh.mts",
+      "accessorh/europresseh.mts"
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "configuration": {
+      "type": "object",
+      "$ref": "#/configuration"
+    }
+  },
+  "configuration": {
+    "additionalProperties": false,
+    "properties": {
+      "port": {
+        "type": "number"
+      },
+      "hostname": {
+        "type": "string"
+      },
+      "accessors": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
