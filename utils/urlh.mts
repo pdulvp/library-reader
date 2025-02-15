@@ -19,12 +19,12 @@ type ParamValue = {
 //check: <V, T extends Rules4<V>>(url: Entries | URL, rules: T): { [key in keyof V]: RuleResult } => {
 // let p: Entries = isFruit(url) ? url : Object.fromEntries(url.searchParams);
 
-const isFruit = (x: any): x is Entries => true;
+const isURL = (x: any) => { return x.searchParams != undefined };
 const isV = <V extends any>(x: any): x is V => true;
 
 var urlh = {
   check: <V extends any>(url: Entries | URL, type: string, rule: Rule<V>, optional: boolean = false): RuleResult => {
-    let p: Entries = isFruit(url) ? url : Object.fromEntries(url.searchParams);
+    let p: Entries = isURL(url) ? Object.fromEntries((url as URL).searchParams) : url as Entries;
     if (optional && p[type] == null) return { status: true, msg: "null" }
     if (p[type] == null) return { status: false, msg: "null" }
     if (!isV(p[type])) return { status: false, msg: "not V" }
@@ -37,7 +37,7 @@ var urlh = {
     if (!result.status) {
       throw new Error('Wrong parameter: ' + type + " " + result.msg);
     }
-    let p: Entries = isFruit(url) ? url : Object.fromEntries(url.searchParams);
+    let p: Entries = isURL(url) ? Object.fromEntries((url as URL).searchParams) : url as Entries;
     let value: V = p[type] as V;
     return trans(value);
   }

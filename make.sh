@@ -8,8 +8,12 @@ mkdir -p output/shared/site
 cp -r packaging/* "output/"
 cp -r "site" "output/shared/"
 cp -r "utils" "output/shared/"
+
+mkdir -p output/shared/configuration
+cp "configuration/default.json" "output/shared/configuration"
+cp "configuration/configuration.schema.json" "output/shared/configuration"
+
 mkdir -p output/shared/accessorh
-#cp -r "accessorh" "output/shared/"
 cp -r "node_modules" "output/shared/"
 cp *.mts "output/shared/"
 cp *.json "output/shared/"

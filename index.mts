@@ -5,57 +5,13 @@ import { type Rule, type Rules, urlh } from './utils/urlh.mts';
 import { consoleh } from './utils/consoleh.mts';
 import { type ContentType, ContentTypes, from as ContentTypeFrom } from "./ContentTypes.mts";
 import { createProcessor, type RequestProcessor } from "./RequestProcessor.mts";
+import { ConfigFields, type Configuration, ConfigRules, loadConfiguration } from './Configuration.mts';
 
 import { combine } from "./Accessor.mts";
 
-const ConfigFields = { hostname: "hostname", port: "port", accessors: "accessors" };
-
-type Configuration = {
-  hostname: string;
-  port: number,
-  accessors: string[]
-}
-
-const ConfigRules: { hostname: Rule<string>, port: Rule<number>, accessors: Rule<string[]> } = {
-  hostname: (type) => {
-    return { status: type != null && type.match(/^[0-9.]+$/) != null, msg: "code invalid format" }
-  },
-  port: (type) => {
-    return { status: type != null && Number(type) != null, msg: "date invalid format" }
-  },
-  accessors: (type) => {
-    return { status: type != null, msg: "type invalid format" }
-  }
-} as const;
-
-if (!fs.existsSync("configuration-default.json")) {
-  console.log("configuration-default is weirdly missing.");
-  process.exit();
-}
-
-let config = JSON.parse(fs.readFileSync("configuration-default.json", { encoding: "utf-8" }).toString()).configuration;
-let configuration: Configuration = {
-  hostname: urlh.param(config, ConfigFields.hostname, ConfigRules.hostname, (hostname) => hostname),
-  port: urlh.param(config, ConfigFields.port, ConfigRules.port, (port) => port),
-  accessors: urlh.param(config, ConfigFields.accessors, ConfigRules.accessors, (accessors) => accessors)
-};
-
 let params = process.argv.slice(2);
-if (params.length > 0) {
-  let name = params[0];
-  if (name.match("^[a-z\-]+$") && fs.existsSync(name + ".json")) {
-    console.log("load additional configuration: " + name);
-
-    let config = JSON.parse(fs.readFileSync(name + ".json", { encoding: "utf-8" }).toString()).configuration;
-    let userConfiguration: Configuration = {
-      hostname: urlh.param(config, ConfigFields.hostname, ConfigRules.hostname, (hostname) => hostname, true),
-      port: urlh.param(config, ConfigFields.port, ConfigRules.port, (port) => port, true),
-      accessors: urlh.param(config, ConfigFields.accessors, ConfigRules.accessors, (accessors) => accessors, true)
-    };
-
-    configuration = { ...configuration, ...Object.fromEntries(Object.entries(userConfiguration).filter(([_, value]) => value !== undefined)) }
-  }
-}
+let configuration: Configuration = loadConfiguration(params);
+console.log(configuration);
 
 let accessors = configuration.accessors;
 if (accessors.length == 0) {

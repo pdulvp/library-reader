@@ -7,7 +7,7 @@ CMD_SETCFG="/sbin/setcfg"
 library_start(){
   cd ${QPKG_ROOT}
   LD_LIB="ld-linux-x86-64.so.2"
-  ${QPKG_ROOT}/node/lib/$LD_LIB --library-path ${QPKG_ROOT}/node/lib ${QPKG_ROOT}/node/bin/node index.mts site/accessorh/sampleh.mjs &
+  ${QPKG_ROOT}/node/lib/$LD_LIB --library-path ${QPKG_ROOT}/node/lib ${QPKG_ROOT}/node/bin/node index.mts sample &
   sleep 5
 }
 
