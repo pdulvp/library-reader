@@ -12,7 +12,10 @@
     "sample": "node --experimental-transform-types index.mts sample",
     "test.1": "node accessorh/abandonwareh.test.mjs",
     "test.2": "node site/customElements/SpinProgress.test.mjs",
-    "test.3": "node --experimental-transform-types utils/urlh.test.mts",
+    "test.3": "node --experimental-transform-types Configuration.test.mts",
+    "test.34": "node --experimental-transform-types utils/asserth.test.mts",
+    "test.5": "node --experimental-transform-types ContentTypes.test.mts",
+    "test.4": "node --experimental-transform-types utils/urlh.test.mts",
     "build": "debian.exe run 'cd /mnt/c/Works/library-reader; if [ -f ./init.sh ]; then source ./init.sh; fi; ./make.sh'",
     "push": "debian.exe run 'cd /mnt/c/Works/library-reader; if [ -f ./init.sh ]; then source ./init.sh; fi; ./push.sh'"
   },

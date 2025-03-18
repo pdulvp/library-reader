@@ -1,4 +1,5 @@
-const consoleh =  {
+
+const consoleh = {
   green(msg: string): void {
     console.log('\u001b[' + 32 + 'm' + msg + '\u001b[0m');
   },
@@ -13,6 +14,8 @@ const consoleh =  {
   }
 }
 
+type Console = typeof consoleh;
+
 export {
-  consoleh
+  consoleh, type Console
 }
