@@ -46,7 +46,7 @@ class BookPanel extends HTMLElement {
 
       let download = this.shadowRoot.querySelector("a.download");
       download.onclick = function (e) {
-        fetch(`/api/download?code=${code}&date=${date}`).then(e => {
+        fetch(`/api/download?code=${code}&date=${date}&type=slice`).then(e => {
           console.log(e);
         });
         //href="/api/download?code=${code}&date=${date}"

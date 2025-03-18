@@ -4,11 +4,27 @@ type Page = string;
 type Code = string;
 type Date = string;
 
+import { type ContentType, ContentTypes, from as ContentTypeFrom } from "./ContentTypes.mts";
 type Book = {
   code: string;
   name: string;
   group: string;
   latest: { date: Date }
+}
+
+const FullModes: {
+  FULL: string, EXTERNAL: string, PERPAGE: string
+} = {
+  FULL: "FULL",
+  EXTERNAL: "EXTERNAL",
+  PERPAGE: "PERPAGE",
+} as const;
+
+type FullMode = typeof FullModes[keyof typeof FullModes];
+
+type FullData = {
+  type: ContentType
+  buffer: Buffer
 }
 
 type CodeAndDate = {
@@ -18,31 +34,31 @@ type CodeAndDate = {
 type Accessor = {
   getBooks: () => Promise<Book[]>;
   getPages: (code: Code, date: Date) => Promise<Page[]>
-  isFull: (code: Code) => Promise<boolean>
+  isFull: (code: Code) => Promise<FullMode>
   getArchives: (code: Code) => Promise<CodeAndDate[]>
   getThumbnail(code: Code, date: Date): Promise<Buffer>
-  getFull: (code: Code, date: Date) => Promise<Buffer>
+  getFull: (code: Code, date: Date) => Promise<FullData>
   getImage: (code: Code, imageId: string) => Promise<Buffer>
 }
 
 function combine(accessorhs): Accessor {
   let coveringAccessor = {};
-  let cover = (code: Code) : Promise<Accessor> => {
+  let cover = (code: Code): Promise<Accessor> => {
     if (Object.keys(coveringAccessor).length == 0) {
       return Promise.all(accessorhs.map(a => a.getBooks())).then(bookResults => {
         bookResults.forEach((books, index) => books.forEach(book => coveringAccessor[book.code] = accessorhs[index]));
-        console.log(code+"="+coveringAccessor[code].name);
+        console.log(code + "=" + coveringAccessor[code].name);
         return Promise.resolve(coveringAccessor[code]);
       });
     } else {
-      console.log(code+"="+coveringAccessor[code].name);
+      console.log(code + "=" + coveringAccessor[code].name);
       return Promise.resolve(coveringAccessor[code]);
     }
   }
   return {
     getBooks: () => {
       return Promise.all(accessorhs.map(a => a.getBooks())).then(books => {
-        return Promise.resolve(books.reduce((o,i) => o.concat(i), []));
+        return Promise.resolve(books.reduce((o, i) => o.concat(i), []));
       });
     },
     getPages: (code, date) => {
@@ -85,6 +101,6 @@ function combine(accessorhs): Accessor {
 }
 
 export {
-  type Accessor, type Page, type Code, type Date, type Book, type CodeAndDate, combine
-  
+  type Accessor, type Page, type Code, type Date, type Book, type CodeAndDate, type FullData, type FullMode, FullModes, combine
+
 }

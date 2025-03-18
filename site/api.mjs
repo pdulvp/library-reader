@@ -24,7 +24,7 @@ var api = {
       });
     },
     download: function (code, date) {
-      return fetch(`api/download?code=${code}&date=${date}`).then(e => {
+      return fetch(`api/download?code=${code}&date=${date}&type=slice`).then(e => {
         return e.json();
       });
     },

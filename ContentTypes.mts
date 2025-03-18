@@ -1,11 +1,13 @@
 
-const ContentTypes : { 
-  CBZ: ContentTypeProperties, CJS:ContentTypeProperties , MJS:ContentTypeProperties , 
-  JS: ContentTypeProperties, CSS: ContentTypeProperties, WOFF2: ContentTypeProperties, 
+const ContentTypes: {
+  CBZ: ContentTypeProperties, CJS: ContentTypeProperties, MJS: ContentTypeProperties,
+  JS: ContentTypeProperties, CSS: ContentTypeProperties, WOFF2: ContentTypeProperties,
   TTF: ContentTypeProperties, JSON: ContentTypeProperties, HTML: ContentTypeProperties,
-  MAP: ContentTypeProperties, SVG: ContentTypeProperties, PNG: ContentTypeProperties, 
-  JPG: ContentTypeProperties, PDF: ContentTypeProperties, UNKNOWN: ContentTypeProperties } = {
+  MAP: ContentTypeProperties, SVG: ContentTypeProperties, PNG: ContentTypeProperties,
+  JPG: ContentTypeProperties, PDF: ContentTypeProperties, UNKNOWN: ContentTypeProperties, ZIP: ContentTypeProperties
+} = {
 
+  ZIP: { extension: "zip", contentType: 'application/zip', encoding: "binary" },
   CBZ: { extension: "cbz", contentType: 'application/zip', encoding: "binary" },
   CJS: { extension: "cjs", contentType: 'text/javascript', encoding: "utf-8" },
   MJS: { extension: "mjs", contentType: 'text/javascript', encoding: "utf-8" },
@@ -35,7 +37,7 @@ type ContentTypeProperties = {
 function from(filename: string): ContentTypeProperties {
   let extension = filename.substring(filename.lastIndexOf(".") + 1);
   let result = Object.keys(ContentTypes).find(k => k == extension.toUpperCase());
-  return result != undefined ? ContentTypes[result]: ContentTypes.UNKNOWN;
+  return result != undefined ? ContentTypes[result] : ContentTypes.UNKNOWN;
 }
 
 export {

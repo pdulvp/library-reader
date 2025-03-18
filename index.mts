@@ -1,6 +1,6 @@
 import fs from 'fs';
 import http from "http";
-import fDomainh from "./domainh.mts";
+import { init, type DownloadType } from "./domainh.mts";
 import { type Rule, type Rules, urlh } from './utils/urlh.mts';
 import { consoleh } from './utils/consoleh.mts';
 import { type ContentType, ContentTypes, from as ContentTypeFrom } from "./ContentTypes.mts";
@@ -34,7 +34,7 @@ for (let i = 0; i < accessors.length; i++) {
 console.log("Loaded accessors: " + accessors);
 console.log("Loaded accessor modules: " + accessorModules);
 let accessorh = combine(accessorModules);
-var domainh = fDomainh(accessorh);
+var domainh = init(accessorh);
 
 var api = {
   list: accessorh.getBooks,
@@ -101,7 +101,7 @@ function proceedRequest(processor: RequestProcessor, onError: (e: Error) => void
     }).catch((e) => { onError(e) });
 
   } else if (url.pathname == '/api/archives') {
-    let code = urlh.param(url, URLFields.code, Rules.code, (code) => "e");
+    let code = urlh.param(url, URLFields.code, Rules.code, (code) => code);
 
     api.archives(code).then(e => {
       processor.json(e);
@@ -140,9 +140,9 @@ function proceedRequest(processor: RequestProcessor, onError: (e: Error) => void
     let [code, date, type] = [
       urlh.param(url, URLFields.code, Rules.code, (code) => code),
       urlh.param(url, URLFields.date, Rules.date, (date) => date),
-      urlh.param(url, URLFields.type, Rules.downloadType, (type) => type)
+      urlh.param(url, URLFields.type, Rules.downloadType, (type: string): DownloadType => type as DownloadType)
     ];
-    api.fetch.download(code, date, "slice").then(r => { //type
+    api.fetch.download(code, date, type).then(r => { //type
       processor.json(r);
     }).catch((e) => { onError(e) });
 

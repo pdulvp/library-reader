@@ -3,8 +3,9 @@ import fsh from "./utils/fsh.js";
 import promiseh from "./utils/promiseh.js";
 import fs from "fs";
 import { dateh } from "./site/dateh.mjs";
-import { type Accessor, type Page, type Code, type Date, type Book, type CodeAndDate } from "./Accessor.mts";
-import ziph from "./utils/ziph.js";
+import { FullModes, type Accessor, type Page, type Code, type FullMode, type Date, type Book, type CodeAndDate } from "./Accessor.mts";
+import { ziph } from "./utils/ziph.mts";
+import { ContentTypes, type ContentType } from "./ContentTypes.mts";
 let currentDownloads: DownloadEntry[] = [];
 let accessorh: Accessor;
 
@@ -72,7 +73,7 @@ function getPages(code: Code, date: Date): Promise<Page[]> {
   return accessorh.getPages(code, date);
 }
 
-function isFull(code: Code): Promise<boolean> {
+function isFull(code: Code): Promise<FullMode> {
   return accessorh.isFull(code);
 }
 
@@ -143,8 +144,9 @@ function read(code: Code, date: Date): Promise<FileResult> {
     } else {
       searchDownloadedPages(folder).then(files => {
         if (files.length > 0) {
-          ziph.createZip(files, outputPartialFile);
-          resolve(outputPartialFile);
+          ziph.createZip(files, outputPartialFile, (total, progress) => { }).then(e => {
+            resolve(outputPartialFile);
+          });
         } else {
           reject(new Error("empty"));
         }
@@ -193,8 +195,8 @@ function download(code: Code, date: Date, type: DownloadType): Promise<{ status:
   }
   download.inProgress = true;
 
-  isFull(code).then(isFull => {
-    if (!isFull) {
+  isFull(code).then((isFull: FullMode) => {
+    if (isFull == FullModes.PERPAGE) {
       pagesQueue.push(() => {
         return getPages(code, date).then(allPages => {
           download.total = allPages.length;
@@ -227,7 +229,7 @@ function download(code: Code, date: Date, type: DownloadType): Promise<{ status:
             }).then(ee => {
               if (download.total == download.current) {
                 return searchDownloadedPages(folder).then(files => {
-                  return ziph.createZip(files, outputFile);
+                  return ziph.createZip(files, outputFile, (total, progress) => { });
                 }).then(e => {
                   download.inProgress = false;
                   return Promise.resolve(true);
@@ -240,29 +242,40 @@ function download(code: Code, date: Date, type: DownloadType): Promise<{ status:
           }), type == "cover");
         });
       });
-    } else {
+    } else if (isFull == FullModes.FULL) {
       fullQueue.push(() => {
         console.log("Full download of " + code + " " + date);
         let fullFolder = `${folder}`;
         return accessorh.getFull(code, date).then(res => {
-          return fsh.mkdir(fullFolder).then(e => {
-            return ziph.unzipDomain(res, fullFolder, outputFileNamePDF, (total, progress) => {
-              download.total = total;
-              download.current = Math.floor(progress / 2);
+          if (res.type == ContentTypes.ZIP) {
+            return fsh.mkdir(fullFolder).then(e => {
+              return fsh.write(outputFileNamePDF + ".z.zip", res.buffer, "binary").then(files => {
+                return ziph.unzipDomain(res.buffer, fullFolder, outputFileNamePDF, (total, progress) => {
+                  download.total = total;
+                  download.current = Math.floor(progress / 2);
+                }).then(e => {
+                  if (e.type == ContentTypes.PDF || e.type == ContentTypes.CBZ) {
+                    return Promise.resolve({ type: e.type });
+                  } else {
+                    return searchDownloadedPages(folder).then(files => {
+                      return ziph.createZip(files, outputFile, (total, progress) => {
+                        download.current = Math.floor(download.total / 2) + Math.floor(progress / 2);
+                      }).then(e => Promise.resolve({ type: ContentTypes.CBZ }));
+                    });
+                  }
+                });
+              });
             });
-          });
-        }).then(e => {
-          console.log('The pages has been saved!');
-          return searchDownloadedPages(folder);
-        }).then(files => {
-          if (files.length == 0) {
-            return Promise.resolve({ status: "complete" });
+          } else if (res.type == ContentTypes.PDF || res.type == ContentTypes.CBZ) {
+            console.log(`copy ${res.type} !`);
+            return fsh.write(outputFile, res.buffer, "binary").then(files => {
+              return Promise.resolve({ type: res.type });
+            });
+          } else {
+            return Promise.reject("unknown full");
           }
-          return ziph.createZip(files, outputFile, (total, progress) => {
-            download.current = Math.floor(download.total / 2) + Math.floor(progress / 2);
-          });
         }).then(e => {
-          console.log('The pdf has been saved!');
+          console.log(`The ${e.type} or the pdf has been saved!`);
           download.inProgress = false;
           download.current = download.total;
           return Promise.resolve({ status: "complete" });
@@ -351,7 +364,9 @@ var domainh = {
   searchDownloadedPages: searchDownloadedPages
 }
 
-export default function (accessor: Accessor) {
+let init = (accessor: Accessor) => {
   accessorh = accessor;
   return domainh;
 };
+
+export { type DownloadType, init }
