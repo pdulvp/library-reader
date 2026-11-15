@@ -6,7 +6,7 @@ function create(i) {
     resolve(i);
     promiseh.queue.append([() => create(i + " _1"), () => create(i + " _2")]);
   }).then(promiseh.wait);
-}
+};
 
 promiseh.queue.append(() => create(0));
 promiseh.queue.append([() => create(1), () => create(2)]);

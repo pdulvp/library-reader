@@ -17,6 +17,7 @@ mkdir -p output/shared/accessorh
 cp -r "node_modules" "output/shared/"
 cp *.mts "output/shared/"
 cp *.json "output/shared/"
+rm "output/shared/package*.json"
 
 ARCH=amd64
 

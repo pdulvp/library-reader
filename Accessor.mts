@@ -32,6 +32,7 @@ type CodeAndDate = {
 }
 
 type Accessor = {
+  name: string
   getBooks: () => Promise<Book[]>;
   getPages: (code: Code, date: Date) => Promise<Page[]>
   isFull: (code: Code) => Promise<FullMode>
@@ -47,15 +48,14 @@ function combine(accessorhs): Accessor {
     if (Object.keys(coveringAccessor).length == 0) {
       return Promise.all(accessorhs.map(a => a.getBooks())).then(bookResults => {
         bookResults.forEach((books, index) => books.forEach(book => coveringAccessor[book.code] = accessorhs[index]));
-        console.log(code + "=" + coveringAccessor[code].name);
         return Promise.resolve(coveringAccessor[code]);
       });
     } else {
-      console.log(code + "=" + coveringAccessor[code].name);
       return Promise.resolve(coveringAccessor[code]);
     }
   }
   return {
+    name: "combine",
     getBooks: () => {
       return Promise.all(accessorhs.map(a => a.getBooks())).then(books => {
         return Promise.resolve(books.reduce((o, i) => o.concat(i), []));
